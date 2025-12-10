@@ -1,151 +1,61 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HELLP ME - مباشر</title>
-    <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; max-width: 800px; margin: auto; background-color: #f0f2f5; }
-        
-        .header { text-align: center; margin-bottom: 30px; }
-        .header h2 { color: #1a73e8; margin: 0; }
-        .header p { color: #666; font-size: 14px; }
-
-        .input-group { display: flex; gap: 10px; margin-bottom: 20px; background: white; padding: 15px; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        input { flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; outline: none; }
-        input:focus { border-color: #1a73e8; }
-        
-        button { padding: 12px 25px; background: #1a73e8; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.3s; }
-        button:hover { background: #1557b0; }
-        button:disabled { background: #ccc; cursor: not-allowed; }
-
-        #messages-container { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); min-height: 300px; max-height: 600px; overflow-y: auto; }
-        
-        .message-card { border-bottom: 1px solid #f1f1f1; padding: 15px 0; animation: fadeIn 0.5s ease-in-out; }
-        .message-card:last-child { border-bottom: none; }
-        .msg-text { font-size: 18px; color: #333; margin-bottom: 5px; line-height: 1.5; }
-        .time { font-size: 12px; color: #999; display: block; text-align: left; }
-        
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-    </style>
-</head>
-<body>
-
-    <div class="header">
-        <h2>منصة المساعدة الفورية</h2>
-        <p>متصلة بقاعدة بيانات Firebase (Amir Project)</p>
-    </div>
-
-    <div class="input-group">
-        <input type="text" id="msgInput" placeholder="اكتب طلبك أو رسالتك هنا...">
-        <button id="sendBtn">إرسال 🚀</button>
-    </div>
-
-    <div id="messages-container">
-        <p style="text-align: center; color: gray; margin-top: 50px;">جاري الاتصال بالسيرفر...</p>
-    </div>
-
-    <script type="module">
-        // استدعاء مكتبات فايربيز
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp } 
-        from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-        // ✅✅ تم وضع بياناتك هنا بنجاح ✅✅
-        const firebaseConfig = {
-          apiKey: "AIzaSyDZ-FQmlixBq6TvaJStsZb5TWmz5hrpTjI",
-          authDomain: "help-me-4229a.firebaseapp.com",
-          databaseURL: "https://help-me-4229a-default-rtdb.firebaseio.com",
-          projectId: "help-me-4229a",
-          storageBucket: "help-me-4229a.firebasestorage.app",
-          messagingSenderId: "808831432210",
-          appId: "1:808831432210:web:e5dc52c416f81dfc5acacb",
-          measurementId: "G-088Q1P6E4X"
-        };
-
-        // تهيئة التطبيق
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        
-        // اسم المجموعة في قاعدة البيانات (تأكد أنك أنشأت Firestore Database)
-        const collectionName = "messages"; 
-
-        const input = document.getElementById("msgInput");
-        const btn = document.getElementById("sendBtn");
-        const container = document.getElementById("messages-container");
-
-        // ---------------------------------------------------------
-        // 1. الاستماع للبيانات (Real-time Listener)
-        // ---------------------------------------------------------
-        try {
-            const q = query(collection(db, collectionName), orderBy("createdAt", "desc"));
-            
-            onSnapshot(q, (snapshot) => {
-                container.innerHTML = ""; // مسح القديم لرسم الجديد
-
-                if (snapshot.empty) {
-                    container.innerHTML = '<p style="text-align: center; color: #888;">لا توجد رسائل حتى الآن. كن أول من يبدأ!</p>';
-                    return;
-                }
-
-                snapshot.forEach(doc => {
-                    const data = doc.data();
-                    const div = document.createElement("div");
-                    div.className = "message-card";
-                    
-                    // تحويل التاريخ من صيغة سيرفر لصيغة مقروءة
-                    let timeString = "جاري المعالجة...";
-                    if (data.createdAt) {
-                        timeString = data.createdAt.toDate().toLocaleTimeString('ar-EG', { hour: '2-digit', minute:'2-digit' });
-                    }
-
-                    div.innerHTML = `
-                        <div class="msg-text">${data.text}</div>
-                        <span class="time">${timeString}</span>
-                    `;
-                    container.appendChild(div);
-                });
-            }, (error) => {
-                console.error("خطأ في جلب البيانات:", error);
-                container.innerHTML = `<p style="color: red; text-align: center;">حدث خطأ في الاتصال: ${error.message}<br>تأكد من إعدادات Rules في فايربيز</p>`;
-            });
-
-        } catch (e) {
-            console.error("Error init:", e);
-        }
-
-        // ---------------------------------------------------------
-        // 2. إرسال البيانات (Sending Data)
-        // ---------------------------------------------------------
-        btn.addEventListener("click", async () => {
-            const text = input.value;
-            if (!text.trim()) return;
-
-            try {
-                btn.disabled = true;
-                btn.innerText = "جاري الإرسال...";
-                
-                await addDoc(collection(db, collectionName), {
-                    text: text,
-                    createdAt: serverTimestamp()
-                });
-
-                input.value = ""; // تفريغ الحقل
-            } catch (error) {
-                console.error("Error adding document: ", error);
-                alert("فشل الإرسال: تأكد من الانترنت أو الصلاحيات");
-            } finally {
-                btn.disabled = false;
-                btn.innerText = "إرسال 🚀";
-                input.focus();
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Help Me</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Cairo', 'sans-serif'],
+            },
+            animation: {
+              marquee: 'marquee 25s linear infinite',
+            },
+            keyframes: {
+              marquee: {
+                '0%': { transform: 'translateX(100%)' },
+                '100%': { transform: 'translateX(-100%)' },
+              }
             }
-        });
-        
-        // إرسال عند ضغط Enter
-        input.addEventListener("keypress", (e) => {
-            if (e.key === "Enter") btn.click();
-        });
-
+          }
+        }
+      }
     </script>
-</body>
+    <style>
+      /* Custom scrollbar for better aesthetics */
+      ::-webkit-scrollbar {
+        width: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #f1f1f1;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 4px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #555;
+      }
+    </style>
+<script type="importmap">
+{
+  "imports": {
+    "react": "https://aistudiocdn.com/react@^19.2.1",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.1/",
+    "react/": "https://aistudiocdn.com/react@^19.2.1/",
+    "vite": "https://aistudiocdn.com/vite@^7.2.7",
+    "@vitejs/plugin-react": "https://aistudiocdn.com/@vitejs/plugin-react@^5.1.2"
+  }
+}
+</script>
+</head>
+  <body class="bg-gray-100 font-sans text-gray-800 min-h-screen flex flex-col">
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
 </html>
