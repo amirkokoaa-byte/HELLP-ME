@@ -2,19 +2,44 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>فحص الاتصال</title>
+    <title>تطبيق متصل بـ Firebase</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; text-align: center; }
+        #inputField { padding: 10px; width: 60%; font-size: 16px; }
+        button { padding: 10px 20px; font-size: 16px; cursor: pointer; background: #FFCA28; border: none; }
+        #live-list { 
+            margin-top: 20px; 
+            border: 1px solid #ddd; 
+            padding: 20px; 
+            max-width: 600px; 
+            margin-right: auto; 
+            margin-left: auto;
+            min-height: 200px;
+        }
+        .item { background: #f9f9f9; padding: 10px; margin: 5px 0; border-radius: 5px; border-bottom: 2px solid #eee; }
+    </style>
 </head>
 <body>
-    <h1>فحص اتصال فايربيز</h1>
-    <button id="testBtn" style="padding: 10px 20px; font-size: 20px;">اضغط لاختبار الاتصال</button>
-    <p id="status" style="color: red; font-weight: bold;"></p>
+
+    <h1>مشروع متصل بـ Firebase Console</h1>
+    <p>أي شيء تكتبه هنا سيظهر للجميع وللأدمن فوراً</p>
+
+    <div>
+        <input type="text" id="inputField" placeholder="اكتب اسم، رسالة، أو أي شيء...">
+        <button id="sendBtn">إرسال للجميع</button>
+    </div>
+
+    <div id="live-list">
+        جاري الاتصال...
+    </div>
 
     <script type="module">
-        // 1. تأكد أنك وضعت بياناتك الحقيقية هنا
+        // 1. استيراد دوال فايربيز من الانترنت (CDN)
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp } 
+        from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // ⚠️⚠️ ضع بيانات مشروعك الحقيقية هنا بدلاً من الاصفار ⚠️⚠️
+        // 2. ضع إعدادات مشروعك هنا (الصق ما نسخته من الموقع)
         const firebaseConfig = {
   apiKey: "AIzaSyDZ-FQmlixBq6TvaJStsZb5TWmz5hrpTjI",
   authDomain: "help-me-4229a.firebaseapp.com",
@@ -26,27 +51,59 @@
   measurementId: "G-088Q1P6E4X"
 };
 
+        // 3. تهيئة الاتصال بقاعدة البيانات
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-        const statusText = document.getElementById("status");
+        
+        // اسم الجدول في قاعدة البيانات
+        const COLLECTION_NAME = "my_updates"; 
 
-        document.getElementById("testBtn").addEventListener("click", async () => {
-            statusText.innerText = "جاري محاولة الاتصال...";
+        // عناصر HTML
+        const inputField = document.getElementById("inputField");
+        const sendBtn = document.getElementById("sendBtn");
+        const listDiv = document.getElementById("live-list");
+
+        // --- الجزء الأول: الإرسال (الكتابة) ---
+        sendBtn.addEventListener("click", async () => {
+            const text = inputField.value;
+            if (text.trim() === "") return;
+
             try {
-                await addDoc(collection(db, "test_connection"), {
-                    msg: "Hello from Amir",
-                    time: new Date()
+                // أمر إضافة مستند جديد
+                await addDoc(collection(db, COLLECTION_NAME), {
+                    content: text,
+                    createdAt: serverTimestamp() // نستخدم توقيت السيرفر لضمان الترتيب
                 });
-                statusText.style.color = "green";
-                statusText.innerText = "✅ نجح الاتصال! المشكلة تم حلها.";
-                alert("تم الاتصال بنجاح! البيانات الآن تظهر في قاعدة البيانات.");
-            } catch (error) {
-                statusText.style.color = "red";
-                statusText.innerText = "❌ فشل الاتصال: " + error.message;
-                console.error(error);
-                alert("خطأ: " + error.message);
+                inputField.value = ""; // تفريغ الحقل
+            } catch (e) {
+                console.error("Error adding document: ", e);
+                alert("حدث خطأ، تأكد من الانترنت أو إعدادات فايربيز");
             }
         });
+
+        // --- الجزء الثاني: الاستقبال اللحظي (القراءة) ---
+        // هذه الدالة (onSnapshot) هي سر الاتصال الدائم
+        // تراقب أي تغيير يحدث في الداتابيز وتنفذ الكود بداخله فوراً
+        
+        const q = query(collection(db, COLLECTION_NAME), orderBy("createdAt", "desc")); // ترتيب الأحدث أولاً
+
+        onSnapshot(q, (snapshot) => {
+            listDiv.innerHTML = ""; // تنظيف القائمة قبل إعادة الرسم
+            
+            snapshot.forEach((doc) => {
+                const data = doc.data();
+                // إنشاء عنصر HTML لكل معلومة
+                const div = document.createElement("div");
+                div.className = "item";
+                div.textContent = data.content;
+                listDiv.appendChild(div);
+            });
+            
+            if(snapshot.empty) {
+                listDiv.innerHTML = "لا توجد بيانات حالياً...";
+            }
+        });
+
     </script>
 </body>
 </html>
