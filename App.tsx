@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   User, UserRole, ParkingSpot, ServiceRequest, AppLink, Advertisement, Notification, 
   METRO_STATIONS, ChatMessage, PaymentMethod, CarpoolRide, LostItem, SosAlert
@@ -1025,6 +1025,102 @@ const NegotiationForm = ({ initialPrice, onSubmit }: { initialPrice: number, onS
   );
 };
 
+const AdminDashboard = ({ isOpen, onClose, appName, setAppName, ads, setAds, appLinks, setAppLinks, customHtml, setCustomHtml }: any) => {
+  const [activeTab, setActiveTab] = useState('general');
+  const [newAd, setNewAd] = useState({ content: '', link: '', thumbnail: '' });
+  const [newLink, setNewLink] = useState({ name: '', url: '', description: '', thumbnail: '' });
+
+  const handleAddAd = () => {
+    if(newAd.content && newAd.link) {
+      setAds([...ads, { id: Date.now().toString(), ...newAd }]);
+      setNewAd({ content: '', link: '', thumbnail: '' });
+    }
+  };
+
+  const handleAddLink = () => {
+    if(newLink.name && newLink.url) {
+      setAppLinks([...appLinks, { id: Date.now().toString(), ...newLink }]);
+      setNewLink({ name: '', url: '', description: '', thumbnail: '' });
+    }
+  };
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="لوحة تحكم المسؤول (Admin)">
+      <div className="flex gap-2 mb-4 border-b pb-2 overflow-x-auto">
+        <button onClick={() => setActiveTab('general')} className={`px-3 py-1 rounded ${activeTab === 'general' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}>عام</button>
+        <button onClick={() => setActiveTab('ads')} className={`px-3 py-1 rounded ${activeTab === 'ads' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}>الإعلانات</button>
+        <button onClick={() => setActiveTab('apps')} className={`px-3 py-1 rounded ${activeTab === 'apps' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}>البرامج المقترحة</button>
+        <button onClick={() => setActiveTab('html')} className={`px-3 py-1 rounded ${activeTab === 'html' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}>تطوير (HTML)</button>
+      </div>
+
+      <div className="max-h-[60vh] overflow-y-auto">
+        {activeTab === 'general' && (
+          <div className="space-y-4">
+             <label className="block text-sm font-bold">اسم البرنامج:</label>
+             <input className="w-full border p-2 rounded" value={appName} onChange={e => setAppName(e.target.value)} />
+             <div className="mt-4 p-4 bg-gray-100 rounded text-center">
+                <p>عدد الإعلانات النشطة: {ads.length}</p>
+                <p>عدد التطبيقات المقترحة: {appLinks.length}</p>
+             </div>
+             <a href="mailto:admin@helpme.com" className="block w-full text-center bg-gray-800 text-white py-2 rounded mt-4">تواصل مع الإدارة</a>
+          </div>
+        )}
+
+        {activeTab === 'ads' && (
+          <div className="space-y-4">
+             <div className="bg-gray-50 p-3 rounded border">
+                <h4 className="font-bold mb-2">إضافة إعلان جديد</h4>
+                <input placeholder="نص الإعلان" className="w-full border p-2 rounded mb-2" value={newAd.content} onChange={e => setNewAd({...newAd, content: e.target.value})} />
+                <input placeholder="الرابط (Link)" className="w-full border p-2 rounded mb-2" value={newAd.link} onChange={e => setNewAd({...newAd, link: e.target.value})} />
+                <input placeholder="رابط الصورة (Thumbnail URL)" className="w-full border p-2 rounded mb-2" value={newAd.thumbnail} onChange={e => setNewAd({...newAd, thumbnail: e.target.value})} />
+                <button onClick={handleAddAd} className="w-full bg-green-600 text-white py-1 rounded">إضافة</button>
+             </div>
+             <div className="space-y-2">
+                {ads.map((ad: Advertisement) => (
+                  <div key={ad.id} className="flex justify-between items-center bg-white p-2 border rounded shadow-sm">
+                    <span className="text-sm truncate w-1/2">{ad.content}</span>
+                    <button onClick={() => setAds(ads.filter((a: Advertisement) => a.id !== ad.id))} className="text-red-500 text-xs hover:underline">حذف</button>
+                  </div>
+                ))}
+             </div>
+          </div>
+        )}
+
+        {activeTab === 'apps' && (
+          <div className="space-y-4">
+             <div className="bg-gray-50 p-3 rounded border">
+                <h4 className="font-bold mb-2">إضافة تطبيق مقترح</h4>
+                <input placeholder="اسم التطبيق" className="w-full border p-2 rounded mb-2" value={newLink.name} onChange={e => setNewLink({...newLink, name: e.target.value})} />
+                <input placeholder="الرابط" className="w-full border p-2 rounded mb-2" value={newLink.url} onChange={e => setNewLink({...newLink, url: e.target.value})} />
+                <input placeholder="وصف" className="w-full border p-2 rounded mb-2" value={newLink.description} onChange={e => setNewLink({...newLink, description: e.target.value})} />
+                <input placeholder="رابط الأيقونة (Image URL)" className="w-full border p-2 rounded mb-2" value={newLink.thumbnail} onChange={e => setNewLink({...newLink, thumbnail: e.target.value})} />
+                <button onClick={handleAddLink} className="w-full bg-green-600 text-white py-1 rounded">إضافة</button>
+             </div>
+             <div className="space-y-2">
+                {appLinks.map((app: AppLink) => (
+                  <div key={app.id} className="flex justify-between items-center bg-white p-2 border rounded shadow-sm">
+                    <div className="flex items-center gap-2">
+                       <img src={app.thumbnail} className="w-6 h-6 rounded-full" alt="" />
+                       <span className="text-sm">{app.name}</span>
+                    </div>
+                    <button onClick={() => setAppLinks(appLinks.filter((a: AppLink) => a.id !== app.id))} className="text-red-500 text-xs hover:underline">حذف</button>
+                  </div>
+                ))}
+             </div>
+          </div>
+        )}
+
+        {activeTab === 'html' && (
+          <div className="space-y-2">
+             <p className="text-xs text-gray-500">أضف كود HTML مخصص ليظهر في الصفحة الرئيسية</p>
+             <textarea className="w-full h-40 border p-2 rounded bg-gray-900 text-green-400 font-mono text-xs" value={customHtml} onChange={e => setCustomHtml(e.target.value)} />
+          </div>
+        )}
+      </div>
+    </Modal>
+  );
+};
+
 // --- Authentication Screens ---
 
 const AuthScreen = ({ onLogin, onRegister }: { onLogin: (u: User) => void; onRegister: () => void; }) => {
@@ -1094,123 +1190,9 @@ const RegisterScreen = ({ onBack, onRegisterSuccess }: { onBack: () => void; onR
           <input className="w-full border p-3 rounded" placeholder="اسم المستخدم" value={username} onChange={e => setUsername(e.target.value)} required />
           <input className="w-full border p-3 rounded" type="password" placeholder="كلمة المرور" value={password} onChange={e => setPassword(e.target.value)} required />
           <input className="w-full border p-3 rounded" type="password" placeholder="تأكيد كلمة المرور" value={confirmPass} onChange={e => setConfirmPass(e.target.value)} required />
-          <button className="w-full bg-green-600 text-white py-3 rounded font-bold hover:bg-green-700 transition">تسجيل</button>
+          <button className="w-full bg-green-600 text-white py-3 rounded font-bold hover:bg-green-700 transition">تسجيل حساب</button>
         </form>
-        <button onClick={onBack} className="w-full mt-4 text-gray-500 text-sm hover:underline">العودة لتسجيل الدخول</button>
-      </div>
-    </div>
-  );
-};
-
-// --- Admin Dashboard ---
-
-const AdminDashboard = ({ isOpen, onClose, appName, setAppName, ads, setAds, appLinks, setAppLinks, customHtml, setCustomHtml }: any) => {
-  if (!isOpen) return null;
-  
-  const [newAdText, setNewAdText] = useState('');
-  const [newAdLink, setNewAdLink] = useState('');
-  const [newAdImage, setNewAdImage] = useState(''); // New State for Image
-  const [newAppLinkName, setNewAppLinkName] = useState('');
-  const [newAppLinkUrl, setNewAppLinkUrl] = useState('');
-  const [newAppLinkThumb, setNewAppLinkThumb] = useState('https://picsum.photos/100/100');
-
-  const handleAddAd = () => {
-    if(!newAdText) return;
-    setAds([...ads, { id: Date.now().toString(), content: newAdText, link: newAdLink || '#', thumbnail: newAdImage }]);
-    setNewAdText(''); setNewAdLink(''); setNewAdImage('');
-  };
-
-  const handleAddAppLink = () => {
-    if(!newAppLinkName) return;
-    setAppLinks([...appLinks, { 
-      id: Date.now().toString(), 
-      name: newAppLinkName, 
-      url: newAppLinkUrl || '#', 
-      thumbnail: newAppLinkThumb,
-      description: 'جديد'
-    }]);
-    setNewAppLinkName(''); setNewAppLinkUrl('');
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 bg-white overflow-y-auto">
-      <div className="bg-gray-800 text-white p-4 flex justify-between items-center sticky top-0">
-        <h2 className="text-xl font-bold">لوحة تحكم المدير (Admin)</h2>
-        <button onClick={onClose} className="bg-red-600 px-4 py-2 rounded">إغلاق</button>
-      </div>
-      
-      <div className="container mx-auto p-6 space-y-8">
-        
-        {/* App Settings */}
-        <section className="bg-gray-50 p-6 rounded shadow border">
-          <h3 className="text-lg font-bold mb-4 text-blue-600">إعدادات عامة</h3>
-          <div className="flex gap-4 items-center">
-             <label>اسم التطبيق:</label>
-             <input className="border p-2 rounded flex-grow" value={appName} onChange={e => setAppName(e.target.value)} />
-          </div>
-        </section>
-
-        {/* Ads Manager */}
-        <section className="bg-gray-50 p-6 rounded shadow border">
-          <h3 className="text-lg font-bold mb-4 text-yellow-600">إدارة شريط الإعلانات</h3>
-          <div className="flex flex-col gap-2 mb-4">
-             <input className="border p-2 rounded w-full" placeholder="نص الإعلان" value={newAdText} onChange={e => setNewAdText(e.target.value)} />
-             <div className="flex gap-2">
-               <input className="border p-2 rounded flex-grow" placeholder="رابط الإعلان (يمكن استخدام رابط مشاركة)" value={newAdLink} onChange={e => setNewAdLink(e.target.value)} />
-               <input className="border p-2 rounded flex-grow" placeholder="رابط صورة الإعلان (URL)" value={newAdImage} onChange={e => setNewAdImage(e.target.value)} />
-             </div>
-             <button onClick={handleAddAd} className="bg-blue-600 text-white px-4 py-2 rounded self-end">إضافة</button>
-          </div>
-          <ul className="space-y-2">
-            {ads.map((ad: Advertisement) => (
-              <li key={ad.id} className="flex justify-between items-center bg-white p-2 rounded border">
-                <div className="flex items-center gap-2">
-                   {ad.thumbnail && <img src={ad.thumbnail} alt="" className="w-8 h-8 rounded object-cover" />}
-                   <span className="truncate max-w-xs">{ad.content}</span>
-                </div>
-                <button onClick={() => setAds(ads.filter((a: any) => a.id !== ad.id))} className="text-red-500 text-sm">حذف</button>
-              </li>
-            ))}
-          </ul>
-        </section>
-
-        {/* App Links Manager */}
-        <section className="bg-gray-50 p-6 rounded shadow border">
-          <h3 className="text-lg font-bold mb-4 text-purple-600">إدارة التطبيقات المقترحة (الروابط)</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mb-4">
-             <input className="border p-2 rounded" placeholder="اسم التطبيق" value={newAppLinkName} onChange={e => setNewAppLinkName(e.target.value)} />
-             <input className="border p-2 rounded" placeholder="رابط التطبيق" value={newAppLinkUrl} onChange={e => setNewAppLinkUrl(e.target.value)} />
-             <input className="border p-2 rounded" placeholder="رابط الصورة" value={newAppLinkThumb} onChange={e => setNewAppLinkThumb(e.target.value)} />
-          </div>
-          <button onClick={handleAddAppLink} className="bg-purple-600 text-white px-4 py-2 rounded w-full mb-4">إضافة رابط جديد</button>
-          
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {appLinks.map((app: AppLink) => (
-              <div key={app.id} className="bg-white p-2 rounded border text-center relative">
-                 <img src={app.thumbnail} alt="" className="w-10 h-10 mx-auto rounded-full"/>
-                 <p className="text-xs font-bold mt-1">{app.name}</p>
-                 <button onClick={() => setAppLinks(appLinks.filter((a: any) => a.id !== app.id))} className="text-red-500 text-xs mt-2 border border-red-200 px-2 rounded hover:bg-red-50">حذف</button>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* Developer Mode (Custom HTML) */}
-        <section className="bg-gray-50 p-6 rounded shadow border border-red-200">
-           <h3 className="text-lg font-bold mb-4 text-red-600">وضع المطور (إضافة كود HTML)</h3>
-           <p className="text-sm text-gray-500 mb-2">تنبيه: الكود المكتوب هنا سيظهر في الصفحة الرئيسية. استخدمه بحذر.</p>
-           <textarea 
-             className="w-full h-40 border p-2 rounded font-mono text-sm bg-gray-900 text-green-400" 
-             placeholder="<div><h1>Custom Section</h1></div>"
-             value={customHtml}
-             onChange={e => setCustomHtml(e.target.value)}
-           ></textarea>
-        </section>
-
-         <div className="flex justify-end">
-             <a href="mailto:admin@helpmme.com" className="text-blue-600 underline">تواصل مع الإدارة الفنية</a>
-         </div>
-
+        <button onClick={onBack} className="w-full mt-4 text-gray-500 text-sm hover:underline">عودة لتسجيل الدخول</button>
       </div>
     </div>
   );
